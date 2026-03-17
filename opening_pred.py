@@ -1,8 +1,8 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, learning_curve
 import numpy as np
 from xgboost import XGBClassifier, plot_importance
-from sklearn.metrics import roc_auc_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -37,9 +37,10 @@ for col in data_train.columns:
     if data_train[col].isnull().sum() > 0:
         print(col, data_train[col].isnull().sum())
 
+#Seprate dependent variables and dependent variable
 col_headers=[col for col in data_train.columns if col not in ['stock_id','target']]
-x=data_train[col_headers]
-y=data_train.iloc[:,-1]
+x=data_train[col_headers].values
+y=data_train.iloc[:,-1].values
 
 #x data for test data
 x_test_kaggle=data_test[col_headers].values
@@ -80,4 +81,49 @@ sns.heatmap(cm, annot=True, fmt='d')
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix')
+plt.show()
+
+fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+
+#ROC plot
+plt.figure(figsize=(8,6))
+plt.plot(fpr, tpr, label='XGBoost')
+plt.plot([0,1], [0,1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend()
+plt.show()
+
+importance = model.feature_importances_
+features = col_headers
+
+df_imp = pd.DataFrame({'feature': features, 'importance': importance})
+df_imp = df_imp.sort_values('importance', ascending=False)
+
+plt.figure(figsize=(10,6))
+sns.barplot(data=df_imp, x='importance', y='feature')
+plt.title('Feature Importance (XGBoost)')
+plt.show()
+
+#Learning curve. How well does the model perform on both the train set and the validation set.
+train_sizes, train_scores, test_scores = learning_curve(
+    model, x_train, y_train, cv=5, scoring='roc_auc'
+)
+
+train_mean = train_scores.mean(axis=1)
+test_mean = test_scores.mean(axis=1)
+
+plt.plot(train_sizes, train_mean, label='Train')
+plt.plot(train_sizes, test_mean, label='Validation')
+plt.xlabel('Training Size')
+plt.ylabel('ROC-AUC')
+plt.title('Learning Curve')
+plt.legend()
+plt.show()
+
+#Heat map features
+plt.figure(figsize=(12,10))
+sns.heatmap(data_train[col_num].corr(), annot=False, cmap='coolwarm')
+plt.title('Correlation Matrix')
 plt.show()
