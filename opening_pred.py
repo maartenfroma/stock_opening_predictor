@@ -38,8 +38,8 @@ for col in data_train.columns:
         print(col, data_train[col].isnull().sum())
 
 col_headers=[col for col in data_train.columns if col not in ['stock_id','target']]
-x=data_train[col_headers].values
-y=data_train.iloc[:,-1].values
+x=data_train[col_headers]
+y=data_train.iloc[:,-1]
 
 #x data for test data
 x_test_kaggle=data_test[col_headers].values
